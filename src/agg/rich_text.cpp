@@ -131,8 +131,8 @@ namespace agg
 	{
 		font* font = ((rich_text*)rt)->rt_get_font();
 
-		font->shadow_x = d.x;
-		font->shadow_y = d.y;
+		font->shadow_x = ROUND_TO_INT(d.x);
+		font->shadow_y = ROUND_TO_INT(d.y);
 		font->shadow_blur = blur;
 
 		memcpy(font->shadow_color, color, 4);
@@ -158,7 +158,7 @@ namespace agg
 	{
 		REBINT result = 0;
 		((rich_text*)rt)->rt_reset();
-		((rich_text*)rt)->rt_set_clip(0,0, GOB_W(gob),GOB_H(gob));
+		((rich_text*)rt)->rt_set_clip(0,0, GOB_W_INT(gob),GOB_H_INT(gob));
 		if (GOB_TYPE(gob) == GOBT_TEXT){
 			result = Text_Gob(rt, (REBSER *)GOB_CONTENT(gob));
 		} else if (GOB_TYPE(gob) == GOBT_STRING) {
@@ -209,7 +209,7 @@ namespace agg
 	{
 		REBINT result = 0;
 		((rich_text*)rt)->rt_reset();
-		((rich_text*)rt)->rt_set_clip(0,0, GOB_W(gob),GOB_H(gob));
+		((rich_text*)rt)->rt_set_clip(0,0, GOB_W_INT(gob),GOB_H_INT(gob));
 		if (GOB_TYPE(gob) == GOBT_TEXT){
 			result = Text_Gob(rt, (REBSER *)GOB_CONTENT(gob));
 		} else if (GOB_TYPE(gob) == GOBT_STRING) {
@@ -232,7 +232,7 @@ namespace agg
 	{
 		REBINT result = 0;
 		((rich_text*)rt)->rt_reset();
-		((rich_text*)rt)->rt_set_clip(0,0, GOB_W(gob),GOB_H(gob));
+		((rich_text*)rt)->rt_set_clip(0,0, GOB_W_INT(gob),GOB_H_INT(gob));
 		if (GOB_TYPE(gob) == GOBT_TEXT){
 			result = Text_Gob(rt, (REBSER *)GOB_CONTENT(gob));
 		} else if (GOB_TYPE(gob) == GOBT_STRING) {

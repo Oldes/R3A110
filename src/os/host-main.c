@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
 #ifdef CUSTOM_STARTUP
 	// For custom startup, you can provide compressed script code here:
-	// n = RL_Start((REBYTE *)(&Reb_Init_Code[0]), REB_INIT_SIZE, 0); // TRUE on halt
+	n = RL_Start((REBYTE *)(&Reb_Init_Code[0]), REB_INIT_SIZE, 0); // TRUE on halt
 #else
 	n = RL_Start(0, 0, 0); // -1: error, 0: no code, > 0 return code.
 #endif

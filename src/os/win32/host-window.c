@@ -71,17 +71,33 @@ REBPAR Zero_Pair = {0, 0};
 //void* Effects;
 
 
-//*** Temporary conversion function (bogus)
-//    Converts utf-8 to win32 wide-chars (for window captions)
-//    NOTE: this code is wrong if s arg is already wide!!!
-REBCHR *As_OS_Str(REBYTE *s) {
-	int size = mbstowcs(0, s, strlen(s)+1); // size includes null terminator
-	REBCHR *str;
+/***********************************************************************
+**
+*/	REBINT As_OS_Str(REBSER *series, REBCHR **string)
+/*
+**	Convert string series to win32 wide-chars. (Handy for GOB/TEXT handling)
+**  Function returns:
+**      TRUE - if the resulting string needs to be deallocated by the caller code
+**      FALSE - if the resulting string is managed be REBOL GC (ie no dealloc needed)
+**
+***********************************************************************/
+{
+    size_t newsize, origsize;
+    wchar_t* wstr;
+    REBCHR* str = (REBCHR*)RL_SERIES(series, RXI_SER_DATA);
+    if (RL_SERIES(series, RXI_SER_WIDE) == 1){
+        //string is bytes - convert to wide chars
+        newsize = mbstowcs(NULL, (char*)str, 0) + 1;
+        origsize = strlen((char*)str) + 1;
+        //note: following string needs be deallocated in the code that uses this function
+        wstr = OS_Make(newsize * sizeof( wchar_t ));
+        mbstowcs(wstr, (char*)str, newsize);
+        *string = (REBCHR*)wstr;
+        return TRUE;
+    }
+    *string = str;
+    return FALSE;
 
-	if (size < 0) size = 0; // invalid string
-	str = OS_Make(size * (sizeof(REBCHR) + 1)); // extra for safety
-	mbstowcs(str, s, strlen(s)+1);
-	return str;
 }
 
 
@@ -299,10 +315,9 @@ static void Free_Window(REBGOB *gob) {
 		}
 	}
 
-	if (IS_GOB_STRING(gob)) {
-	    title = As_OS_Str(GOB_STRING(gob));
-	    osString = TRUE; //make the string don't leak
-    } else
+	if (IS_GOB_STRING(gob))
+        osString = As_OS_Str(GOB_CONTENT(gob), (REBCHR**)&title);
+    else
         title = TXT("REBOL Window");
 
 	if (GET_GOB_FLAG(gob, GOBF_POPUP)) {
@@ -324,9 +339,8 @@ static void Free_Window(REBGOB *gob) {
 		NULL, App_Instance, NULL
 	);
 
-    //this needs to be improved when GOB_STRING return unicode/bytes flag in some way
-    if (osString)
-        OS_Free(title);
+    //don't let the string leak!
+    if (osString) OS_Free(title);
 	if (!window) Host_Crash("CreateWindow failed");
 
 	// Enable drag and drop
@@ -432,6 +446,7 @@ static void Free_Window(REBGOB *gob) {
 	HWND window;
 	WINDOWINFO wi;
 	REBCHR *title;
+	REBYTE osString = FALSE;
 
 	wi.cbSize = sizeof(WINDOWINFO);
 
@@ -463,10 +478,10 @@ static void Free_Window(REBGOB *gob) {
 //		SetWindowPos(window, 0, GOB_X(gob), GOB_Y(gob), GOB_W(gob), GOB_H(gob), opts | SWP_NOZORDER);
 
 	if (IS_GOB_STRING(gob)){
-        title = As_OS_Str(GOB_STRING(gob));
+        osString = As_OS_Str(GOB_CONTENT(gob), (REBCHR**)&title);
 		SetWindowText(window, title);
-		//don't let the converted string leak! - will be changed once GOB_STRING returns unicode/bytes flag
-        OS_Free(title);
+		//don't let the string leak!
+        if (osString) OS_Free(title);
     }
 
 	/*

@@ -439,8 +439,8 @@ namespace agg
 
 	int rich_text::rt_size_text(REBXYF* size)
 	{
-		m_tmp_val.pair.x = size->x;
-		m_tmp_val.pair.y = size->y;
+		m_tmp_val.pair.x = ROUND_TO_INT(size->x);
+		m_tmp_val.pair.y = ROUND_TO_INT(size->y);
 		rt_draw_text(SIZE_TEXT);
 		size->x = m_tmp_val.pair.x;
 		size->y = m_tmp_val.pair.y;
@@ -454,8 +454,8 @@ namespace agg
 	returns carret info structure for useful text handling
 	--------------------------------------------------------------------*/
 	void rich_text::rt_offset_to_caret(REBXYF offset, REBINT *element, REBINT *position){
-		m_tmp_val.pair.x = offset.x+1;
-		m_tmp_val.pair.y = offset.y;
+		m_tmp_val.pair.x = ROUND_TO_INT(offset.x+1);
+		m_tmp_val.pair.y = ROUND_TO_INT(offset.y);
 		rt_draw_text(OFFSET_TO_CARET);
 		*element = m_tmp_val.pair.x-1;
 		*position = m_tmp_val.pair.y-1;
@@ -481,10 +481,10 @@ namespace agg
 	--------------------------------------------------------------------*/
 	void rich_text::rt_set_hinfo(REBXYF highlightStart, REBXYF highlightEnd){
 		if (!m_hinfo) m_hinfo = new hinfo();
-		m_hinfo->hStart.x = highlightStart.x;
-		m_hinfo->hStart.y = highlightStart.y;
-		m_hinfo->hEnd.x = highlightEnd.x;
-		m_hinfo->hEnd.y = highlightEnd.y;
+		m_hinfo->hStart.x = ROUND_TO_INT(highlightStart.x);
+		m_hinfo->hStart.y = ROUND_TO_INT(highlightStart.y);
+		m_hinfo->hEnd.x = ROUND_TO_INT(highlightEnd.x);
+		m_hinfo->hEnd.y = ROUND_TO_INT(highlightEnd.y);
 	}
 
 	/*-------------------------------------------------------------------
@@ -556,7 +556,7 @@ namespace agg
 //		m_contour.width(-m_weight.value() * m_height.value() * 0.05);
 
 		int glyph_count = 0;
-		int ox,oy;
+		double ox,oy;
 		double x0 = 0;
 		m_right_hang = 0;
 
@@ -585,10 +585,10 @@ namespace agg
 			if (total_size.y == 0) total_size.y = lh;
 			switch (attr.para.valign){
 				case W_TEXT_BOTTOM:
-					valign = m_wrap_size_y - total_size.y;
+					valign = ROUND_TO_INT(m_wrap_size_y - total_size.y);
 					break;
 				case W_TEXT_MIDDLE:
-					valign = (m_wrap_size_y - total_size.y) / 2;
+					valign = ROUND_TO_INT((m_wrap_size_y - total_size.y) / 2);
 					break;
 			}
 		}

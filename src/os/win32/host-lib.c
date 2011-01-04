@@ -694,5 +694,17 @@ static void *Task_Ready;
 **
 ***********************************************************************/
 {
+
+#ifndef REB_CORE
+
+#ifndef NO_COMPOSITOR
+    return (REBSER*)Gob_To_Image(gob);
+#else
 	return 0;
+#endif
+
+#else
+	return 0;
+#endif
+
 }

@@ -120,6 +120,10 @@ struct rebol_gob {		// size: 64 bytes!
 #define GOB_YO(g)		((g)->old_offset.y)
 #define GOB_WO(g)		((g)->old_size.x)
 #define GOB_HO(g)		((g)->old_size.y)
+#define GOB_XO_INT(g)	ROUND_TO_INT((g)->old_offset.x)
+#define GOB_YO_INT(g)	ROUND_TO_INT((g)->old_offset.y)
+#define GOB_WO_INT(g)	ROUND_TO_INT((g)->old_size.x)
+#define GOB_HO_INT(g)	ROUND_TO_INT((g)->old_size.y)
 
 #define CLEAR_GOB_STATE(g) ((g)->state = 0)
 

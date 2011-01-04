@@ -69,6 +69,7 @@ These are now obsolete (as of A107) and should be removed:
 #endif
 #endif
 
+#define CUSTOM_STARTUP
 
 //* MS Windows 32 ******************************************************
 

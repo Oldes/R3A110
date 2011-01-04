@@ -156,7 +156,7 @@ RL_LIB *RL; // Link back to reb-lib from embedded extensions
 
 /***********************************************************************
 **
-*/	RXIEXT int RXD_Graphics(int cmd, RXIFRM *frm, void *data)
+*/	RXIEXT int RXD_Graphics(int cmd, RXIFRM *frm, REBCEC *data)
 /*
 **		Graphics command extension dispatcher.
 **
@@ -166,7 +166,8 @@ RL_LIB *RL; // Link back to reb-lib from embedded extensions
 
 	case CMD_GRAPHICS_SHOW:
 		Show_Gob((REBGOB*)RXA_SERIES(frm, 1));
-		break;
+		RXA_TYPE(frm, 1) = RXT_GOB;
+		return RXR_VALUE;
 
     case CMD_GRAPHICS_SIZE_TEXT:
         if (Rich_Text) {
@@ -711,7 +712,8 @@ RL_LIB *RL; // Link back to reb-lib from embedded extensions
         {
             REBCHR* str;
             REBCNT gc = TRUE;
-            if (RL_GET_STRING(RXA_SERIES(frm, 1), 0 , (void*)&str) < 0){
+            REBINT result = RL_GET_STRING(RXA_SERIES(frm, 1), 0 , (void**)&str);
+            if (result <= 0){
                 size_t newSize = mbstowcs(NULL, (char*)str, 0) + 1;
                 size_t origsize = strlen((char*)str) + 1;
                 //note: following string will be deallocated by the rich text module
@@ -1223,26 +1225,13 @@ RL_LIB *RL; // Link back to reb-lib from embedded extensions
 **
 ***********************************************************************/
 {
-	RL = (RL_LIB *)RL_Extend((REBYTE *)(&RX_graphics[0]), &RXD_Graphics);
+	RL = RL_Extend((REBYTE *)(&RX_graphics[0]), &RXD_Graphics);
 	RL_Extend((REBYTE *)(&RX_draw[0]), &RXD_Draw);
 	RL_Extend((REBYTE *)(&RX_shape[0]), &RXD_Shape);
 	RL_Extend((REBYTE *)(&RX_text[0]), &RXD_Text);
 }
 
 #ifdef OLD__FUNCS_NEED_CONVERSION
-
-/***********************************************************************
-**
-*/  REBINT OS_Gob_To_Image(REBSER *image, REBGOB *gob)
-/*
-**      Render gob into an image.
-**		Clip to keep render inside the image provided.
-**
-***********************************************************************/
-{
-	return Gob_To_Image(image, gob);
-}
-
 
 /***********************************************************************
 **

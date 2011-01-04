@@ -11,7 +11,7 @@ extern "C" void* Rich_Text;
 //extern "C" void* Effects;
 extern "C" REBINT Text_Gob(void *richtext, REBSER *block);
 //extern "C" REBINT Effect_Gob(void *effects, REBSER *block);
-extern "C" void Reb_Print(char *fmt, ...);//output just for testing
+extern "C" void RL_Print(char *fmt, ...);//output just for testing
 namespace agg
 {
 
@@ -120,7 +120,7 @@ Reb_Print(
 				m_trans_curved.angle_tolerance(0);
 
 
-				if (attr.stroked){
+				if (attr.stroked && attr.line_width){
 					//AA correction for stroke
 					m_output_mtx *= trans_affine_translation(0.5, 0.5);
 				}
@@ -393,6 +393,30 @@ Reb_Print(
 								rbuf_img_out.attach(attr.img_buf, (int)attr.coord_x, (int)attr.coord_y, (int)attr.coord_x * 4);
 							}
 
+							double* vertices = getVertices(m_trans,attr.index);
+
+                            //fast/slow blit decission
+							if (
+                                (vertices[1] == vertices[3]) &&
+                                (vertices[5] == vertices[7]) &&
+                                (vertices[0] == vertices[6]) &&
+                                (vertices[2] == vertices[4]) &&
+                                (vertices[2] - vertices[0] == attr.coord_x) &&
+                                (vertices[7] - vertices[1] == attr.coord_y)
+							){
+							    attr.post_mtx.store_to(m_mtx_store);
+							    if (m_mtx_store[0] == 1.0 && m_mtx_store[1] == 0.0 && m_mtx_store[2] == 0.0 && m_mtx_store[3] == 1.0){
+//                                    RL_Print("Fast BLEND2 img %dx%d %dx%d\n", renb.xmin(), renb.ymin(),renb.xmax(), renb.ymax());
+                                    renb.blend_from(
+                                        pixf_img, 0, (int)vertices[0]+(int)m_mtx_store[4], (int)vertices[1]+(int)m_mtx_store[5], 255
+                                    );
+                                    if (key_img_buffer !=0){
+                                        delete [] key_img_buffer;
+                                    }
+                                    break;
+							    }
+							}
+
 							typedef span_allocator<rgba8> span_alloc_type;
 							span_alloc_type sa;
 
@@ -400,8 +424,6 @@ Reb_Print(
 
 							m_ras.reset();
 							m_ras.add_path(m_trans_curved, attr.index);
-
-							double* vertices = getVertices(m_trans,attr.index);
 
 							if (attr.pattern_mode == PM_NORMAL){
 								m_trans_perspective.quad_to_rect(vertices, 0, 0, attr.coord_x, attr.coord_y);
@@ -723,152 +745,166 @@ Reb_Print(
 					case RT_CLIPPING://set clipping
 						attr.post_mtx.transform(&attr.clip_x1, &attr.clip_y1);
 						attr.post_mtx.transform(&attr.clip_x2, &attr.clip_y2);
-						renb.clip_box((int)attr.clip_x1, (int)attr.clip_y1, (int)attr.clip_x2, (int)attr.clip_y2);
-						m_ras.clip_box(attr.clip_x1, attr.clip_y1, attr.clip_x2, attr.clip_y2);
+
+                        //use intersection with the framebuffer to eliminate wrong clipping case when re-rendering GOB old position
+                        rect cb(ROUND_TO_INT(attr.clip_x1), ROUND_TO_INT(attr.clip_y1), ROUND_TO_INT(attr.clip_x2), ROUND_TO_INT(attr.clip_y2));
+                        rect cb2(m_offset_x, m_offset_y, m_actual_width, m_actual_height);
+                        cb = intersect_rectangles(cb, cb2);
+                        if (cb.is_valid()){
+//                            RL_Print("clip: %dx%d %dx%d\n",cb.x1,cb.y1,cb.x2,cb.y2);
+                            renb.clip_box(cb.x1,cb.y1,cb.x2,cb.y2);
+                            m_ras.clip_box(cb.x1,cb.y1,cb.x2,cb.y2);
+                        } else {
+//                            RL_Print("invalid clip\n");
+                            renb.reset_clipping(false);
+                            m_ras.reset_clipping();
+                        }
 						continue;
 				}
 
 				m_ras.filling_rule(fill_non_zero);
 
-				if (attr.stroked) {
-                    // If the *visual* line width is considerable we
-                    // turn on processing of curve cusps.
-                    //---------------------
-                    if(lw > 1.0)
-                    {
-                        m_trans_curved.angle_tolerance(0.2);
-                    }
+                if (lw != 0.0) {
+					if (attr.stroked) {
+	                    // If the *visual* line width is considerable we
+	                    // turn on processing of curve cusps.
+	                    //---------------------
+	                    if(lw > 1.0)
+	                    {
+	                        m_trans_curved.angle_tolerance(0.2);
+	                    }
 
-					if (attr.arrow_head == 1)
-						m_stroke.shorten(lw * 2.0);
-					else
-						m_stroke.shorten(0.0);
+						if (attr.arrow_head == 1)
+							m_stroke.shorten(lw * 2.0);
+						else
+							m_stroke.shorten(0.0);
 
-					if (attr.pen_img_buf != 0) {
-						//stroke image pattern
+						if (attr.pen_img_buf != 0) {
+							//stroke image pattern
+							m_ras.reset();
+							pattern_filter_bilinear_rgba8 fltr;
+
+							typedef line_image_pattern<pattern_filter_bilinear_rgba8> pattern_type;
+							typedef renderer_outline_image<ren_base, pattern_type> renderer_type;
+							typedef rasterizer_outline_aa<renderer_type>                rasterizer_type;
+
+							// Create the image rendering buffer
+							rendering_buffer rbuf_img;
+							rbuf_img.attach(attr.pen_img_buf, attr.pen_img_buf_x, attr.pen_img_buf_y, attr.pen_img_buf_x * 4);
+							pixfmt pixf_img(rbuf_img);
+							ren_base renb_img(pixf_img);
+
+							pattern_type patt(fltr, renb_img);
+
+							renderer_type ren_img(renb, patt);
+							rasterizer_type ras_img(ren_img);
+
+
+//							ren_img.scale_x(.5);
+//								ren_img.start_x(m_start_x.value());
+							ras_img.add_path(m_trans_curved, attr.index);
+						} else {
+							m_stroke.width(lw);
+							m_stroke.line_join(attr.stroke_line_join);
+							m_stroke.line_cap(attr.stroke_line_cap);
+							m_stroke.miter_limit(4.0);
+
+							//rasterize & render stroke
+							m_ras.reset();
+//							m_ras.add_path(m_stroked_trans, attr.index);
+							m_ras.add_path(m_stroke, attr.index);
+
+							if (attr.anti_aliased){
+								ren_aa_s.color(attr.pen);
+								render_scanlines(m_ras, m_p_sl, ren_aa_s);
+							} else {
+								ren_b.color(attr.pen);
+								render_scanlines(m_ras, m_p_sl, ren_b);
+							}
+						}
+
+						//render arrows if needed
+						if ((attr.arrow_head > 0) || (attr.arrow_tail > 0)){
+							double k = ::pow(lw, 0.7);
+							switch (attr.arrow_head){
+								case 0:
+									m_ah.no_head();
+									m_ah.no_head_tail();
+									break;
+								case 1:
+									m_ah.head(0, 8 * k, 3 * k, 2 * k);
+									m_ah.no_head_tail();
+									break;
+								case 2:
+									m_ah.head(1 * k, 1.5 * k, 3 * k, 5 * k);
+//									m_ah.head((1 * k) + (6.5 * k), (1.5 * k) - (6.5 * k), 3 * k, 5 * k);
+									m_ah.head_tail();
+									break;
+							}
+							switch (attr.arrow_tail){
+								case 0:
+									m_ah.no_tail();
+									m_ah.no_tail_head();
+									break;
+								case 1:
+									m_ah.tail(0, 8 * k, 3 * k, 2 * k);
+									m_ah.tail_head();
+									break;
+								case 2:
+									m_ah.tail(1 * k, 1.5 * k, 3 * k, 5 * k);
+//									m_ah.tail((1 * k)  + (6.5 * k), (1.5 * k) - (6.5 * k), 3 * k, 5 * k);
+									m_ah.no_tail_head();
+									break;
+							}
+							m_ras.reset();
+							m_ras.add_path(m_arrow);
+
+							if (attr.anti_aliased){
+								ren_aa_s.color(attr.arrow_color);
+								render_scanlines(m_ras, m_p_sl, ren_aa_s);
+							} else {
+								ren_b.color(attr.arrow_color);
+								render_scanlines(m_ras, m_p_sl, ren_b);
+							}
+
+						} else {
+							m_ah.no_head();
+							m_ah.no_head_tail();
+							m_ah.no_tail();
+							m_ah.no_tail_head();
+						}
+
+					}
+
+					if (attr.dashed && attr.dash_array){ // Carl - patch to fix bug 4010
+
+						// define dashes pattern
+						m_dash.remove_all_dashes();
+
+						double* pattern = attr.dash_array;
+
+						for(int j = 1; j < (int)pattern[0]; j+=2) {
+							m_dash.add_dash((attr.line_width_mode) ? pattern[j] : pattern[j]*scl, (attr.line_width_mode) ? pattern[j+1] : pattern[j+1]*scl);
+						}
+
+						m_dash.dash_start(.5);
+						m_dashed_stroke.miter_limit(4.0);
+						m_dashed_stroke.width(lw);
+						m_dashed_stroke.line_join(attr.dash_line_join);
+						m_dashed_stroke.line_cap(attr.dash_line_cap);
+
+						//rasterize & render dashed stroke
 						m_ras.reset();
-						pattern_filter_bilinear_rgba8 fltr;
+						m_ras.add_path(m_dashed_stroke, attr.index);
 
-						typedef line_image_pattern<pattern_filter_bilinear_rgba8> pattern_type;
-						typedef renderer_outline_image<ren_base, pattern_type> renderer_type;
-						typedef rasterizer_outline_aa<renderer_type>                rasterizer_type;
-
-						// Create the image rendering buffer
-						rendering_buffer rbuf_img;
-						rbuf_img.attach(attr.pen_img_buf, attr.pen_img_buf_x, attr.pen_img_buf_y, attr.pen_img_buf_x * 4);
-						pixfmt pixf_img(rbuf_img);
-						ren_base renb_img(pixf_img);
-
-						pattern_type patt(fltr, renb_img);
-
-						renderer_type ren_img(renb, patt);
-						rasterizer_type ras_img(ren_img);
-
-
-//						ren_img.scale_x(.5);
-//						ren_img.start_x(m_start_x.value());
-						ras_img.add_path(m_trans_curved, attr.index);
-					} else {
-						m_stroke.width(lw);
-						m_stroke.line_join(attr.stroke_line_join);
-						m_stroke.line_cap(attr.stroke_line_cap);
-						m_stroke.miter_limit(4.0);
-
-						//rasterize & render stroke
-						m_ras.reset();
-//						m_ras.add_path(m_stroked_trans, attr.index);
-						m_ras.add_path(m_stroke, attr.index);
 
 						if (attr.anti_aliased){
-							ren_aa_s.color(attr.pen);
-							render_scanlines(m_ras, m_p_sl, ren_aa_s);
+						ren_aa_s.color(attr.line_pattern_pen);
+						render_scanlines(m_ras, m_p_sl, ren_aa_s);
 						} else {
-							ren_b.color(attr.pen);
+							ren_b.color(attr.line_pattern_pen);
 							render_scanlines(m_ras, m_p_sl, ren_b);
 						}
-					}
-
-					//render arrows if needed
-					if ((attr.arrow_head > 0) || (attr.arrow_tail > 0)){
-						double k = ::pow(lw, 0.7);
-						switch (attr.arrow_head){
-							case 0:
-								m_ah.no_head();
-								m_ah.no_head_tail();
-								break;
-							case 1:
-								m_ah.head(0, 8 * k, 3 * k, 2 * k);
-								m_ah.no_head_tail();
-								break;
-							case 2:
-								m_ah.head(1 * k, 1.5 * k, 3 * k, 5 * k);
-//								m_ah.head((1 * k) + (6.5 * k), (1.5 * k) - (6.5 * k), 3 * k, 5 * k);
-								m_ah.head_tail();
-								break;
-						}
-						switch (attr.arrow_tail){
-							case 0:
-								m_ah.no_tail();
-								m_ah.no_tail_head();
-								break;
-							case 1:
-								m_ah.tail(0, 8 * k, 3 * k, 2 * k);
-								m_ah.tail_head();
-								break;
-							case 2:
-								m_ah.tail(1 * k, 1.5 * k, 3 * k, 5 * k);
-//								m_ah.tail((1 * k)  + (6.5 * k), (1.5 * k) - (6.5 * k), 3 * k, 5 * k);
-								m_ah.no_tail_head();
-								break;
-						}
-						m_ras.reset();
-						m_ras.add_path(m_arrow);
-
-						if (attr.anti_aliased){
-							ren_aa_s.color(attr.arrow_color);
-							render_scanlines(m_ras, m_p_sl, ren_aa_s);
-						} else {
-							ren_b.color(attr.arrow_color);
-							render_scanlines(m_ras, m_p_sl, ren_b);
-						}
-
-					} else {
-						m_ah.no_head();
-						m_ah.no_head_tail();
-						m_ah.no_tail();
-						m_ah.no_tail_head();
-					}
-
-				}
-
-				if (attr.dashed && attr.dash_array){ // Carl - patch to fix bug 4010
-
-					// define dashes pattern
-					m_dash.remove_all_dashes();
-
-					double* pattern = attr.dash_array;
-
-					for(int j = 1; j < (int)pattern[0]; j+=2) {
-						m_dash.add_dash((attr.line_width_mode) ? pattern[j] : pattern[j]*scl, (attr.line_width_mode) ? pattern[j+1] : pattern[j+1]*scl);
-					}
-
-					m_dash.dash_start(.5);
-					m_dashed_stroke.miter_limit(4.0);
-					m_dashed_stroke.width(lw);
-					m_dashed_stroke.line_join(attr.dash_line_join);
-					m_dashed_stroke.line_cap(attr.dash_line_cap);
-
-					//rasterize & render dashed stroke
-					m_ras.reset();
-					m_ras.add_path(m_dashed_stroke, attr.index);
-
-
-					if (attr.anti_aliased){
-					ren_aa_s.color(attr.line_pattern_pen);
-					render_scanlines(m_ras, m_p_sl, ren_aa_s);
-					} else {
-						ren_b.color(attr.line_pattern_pen);
-						render_scanlines(m_ras, m_p_sl, ren_b);
 					}
 				}
 			}
@@ -983,17 +1019,7 @@ Reb_Print(
 
 	void agg_graphics::agg_line_width(double w, int mode)
 	{
-		if (w <= 0){
-			w = 1;
-		}
-/*
-		double sx =	double(m_actual_width) / double(m_initial_width);
-		double sy = double(m_actual_height) / double(m_initial_height);
-		if(sy < sx) sx = sy;
-
-		m_line_width = w * sx;
-*/
-		m_line_width = w;
+		m_line_width = max(0,w);
 		m_line_width_mode = mode;
 
 	}
@@ -1049,6 +1075,29 @@ Reb_Print(
 
 	void agg_graphics::agg_gradient_pen(int grad, double oftX, double oftY, double begin, double end, double ang, double scX,double scY, unsigned char *colors, REBDEC* offsets, int mode)
 	{
+		switch (grad)
+		{
+			case W_DRAW_RADIAL:
+				m_gradient = &gr_circle;
+				break;
+			case W_DRAW_CONIC:
+				m_gradient = &gr_conic;
+				break;
+			case W_DRAW_DIAMOND:
+				m_gradient = &gr_diamond;
+				break;
+			case W_DRAW_LINEAR:
+				m_gradient = &gr_x;
+				break;
+			case W_DRAW_DIAGONAL:
+				m_gradient = &gr_xy;
+				break;
+			case W_DRAW_CUBIC:
+				m_gradient = &gr_sqrt_xy;
+				break;
+            default:
+                return;
+		}
 		m_color_profile = new rgba8 [256];
 		unsigned num_pnt = colors[0] - 1;
 
@@ -1081,28 +1130,6 @@ Reb_Print(
 		m_grad_mtx *= trans_affine_rotation(ang * pi / 180.0);
 		m_grad_mtx *= trans_affine_translation(oftX, oftY);
 		m_gradient_mode = mode;
-
-		switch (grad)
-		{
-			case W_DRAW_RADIAL:
-				m_gradient = &gr_circle;
-				break;
-			case W_DRAW_CONIC:
-				m_gradient = &gr_conic;
-				break;
-			case W_DRAW_DIAMOND:
-				m_gradient = &gr_diamond;
-				break;
-			case W_DRAW_LINEAR:
-				m_gradient = &gr_x;
-				break;
-			case W_DRAW_DIAGONAL:
-				m_gradient = &gr_xy;
-				break;
-			case W_DRAW_CUBIC:
-				m_gradient = &gr_sqrt_xy;
-				break;
-		}
 
 		unsigned i;
 		unsigned k = 0;
@@ -1295,7 +1322,7 @@ Reb_Print(
 		m_img_filter_arg = 1.0;
 		m_pattern_mode = 0;
 		m_img_border = 0;
-		m_img_key_color = rgba8(255,255,255,255);
+		m_img_key_color = rgba8(255,255,255,0);
 		m_pattern_x = 0;
 		m_pattern_y = 0;
 		m_pattern_w = 0;

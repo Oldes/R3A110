@@ -36,8 +36,8 @@ namespace agg
 
 	//text highlight info
 	typedef struct hinfo {
-		REBXYF hStart;
-		REBXYF hEnd;
+		REBPAR hStart;
+		REBPAR hEnd;
 	} HINFO;
 
 	typedef struct font {
@@ -91,8 +91,8 @@ namespace agg
 		int indent_y;
 		int tabs;
 		int wrap;
-		int scroll_x;
-		int scroll_y;
+		float scroll_x;
+		float scroll_y;
 		int align;
 		int valign;
 		para():

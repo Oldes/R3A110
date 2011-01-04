@@ -1,9 +1,10 @@
 REBOL [
 	Title: "Basic DRAW test"
-	Date: 4-Jan-2008
+	Date: 24-Sep-2010
+	Author: "Cyphre"
 	Purpose: "Tests many of the basic DRAW dialect commands, eg. lines, boxes, curves, fills etc."
 ]
-do %gfx-pre.r
+do %gfx-pre.r3
 
 black: 0.0.0
 white: 255.255.255
@@ -156,11 +157,11 @@ gobd/draw: to-draw [
 		;CIRCLE
 		reset-matrix
 		translate 0x100
-		circle 50x50 45x45
+		circle 50x50 45
 		translate 100x0
-		circle 50x50 45x22.5
+		circle 50x50 45 22.5
 		translate 100x0
-		circle 50x50 22.5x45
+		circle 50x50 22.5 45
 
 		;CURVE
 		reset-matrix

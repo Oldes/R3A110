@@ -13,13 +13,30 @@ namespace agg
 	   delete (compositor*)context;
 	}
 
-	extern "C" REBINT Gob_To_Image(REBSER *image, REBGOB *gob)
+	extern "C" REBSER* Gob_To_Image(REBGOB *gob)
 	{
-//		compositor* cp = new compositor (IMG_DATA(image), IMG_WIDE(image), IMG_HIGH(image));
-//		REBINT result = cp->cp_compose_gob(gob, gob);
-//		cp->cp_set_win_buffer(0, 0, 0); //set the buffer to 0 so the image is not deleted on next line
-//		delete cp;
-		return 0; //result;
+	    REBINT w,h,result;
+	    REBSER* img;
+        compositor* cp;
+        REBGOB* parent;
+
+	    w = (REBINT)GOB_W(gob);
+	    h = (REBINT)GOB_H(gob);
+	    img = (REBSER*)RL_MAKE_IMAGE(w,h);
+
+	    //reset parent so the gob is at the 'top'
+        parent = GOB_PARENT(gob);
+        GOB_PARENT(gob) = 0;
+
+        cp = new compositor ((REBYTE *)RL_SERIES(img, RXI_SER_DATA), w, h);
+		result = cp->cp_compose_gob(gob, gob);
+		cp->cp_set_win_buffer(0, 0, 0); //set the buffer to 0 so the image is not deleted on next line
+		delete cp;
+
+		//restore parent
+		GOB_PARENT(gob) = parent;
+
+		return ((result == 0) ? img : 0);
 	}
 
 	extern "C" REBINT Compose_Gob(void* context, REBGOB* winGob,REBGOB* gob)

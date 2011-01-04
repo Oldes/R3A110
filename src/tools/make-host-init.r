@@ -24,7 +24,8 @@ dir: %os/
 
 ; Files to include in the host program:
 files: [
-	%mezz/prot-http.r
+;	%mezz/prot-http.r
+	%mezz/gui-patch.r
 ;	%mezz/view-colors.r
 ]
 

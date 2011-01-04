@@ -2,7 +2,7 @@ REBOL [
 	Title: "Basic CARET test"
 	Author: cyphre@seznam.cz
 ]
-do %gfx-pre.r
+do %gfx-pre.r3
 print "CARET Test..."
 
 ;;; WINDOW

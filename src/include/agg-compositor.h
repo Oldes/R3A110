@@ -4,7 +4,7 @@ extern void* Create_Compositor(REBGOB* rootGob, REBGOB* gob);
 
 extern void Destroy_Compositor(void* context);
 
-extern REBINT Gob_To_Image(REBSER *image, REBGOB *gob);
+extern REBSER* Gob_To_Image(REBGOB *gob);
 
 extern REBINT Compose_Gob(void* context, REBGOB* winGob, REBGOB* gob);
 

@@ -1,6 +1,6 @@
 REBOL [Title: "Basic SHAPE test"]
 
-do %gfx-pre.r
+do %gfx-pre.r3
 
 ;;; WINDOW
 win: make gob! [text: "Basic SHAPE test" offset: 200x20 size: 800x800]

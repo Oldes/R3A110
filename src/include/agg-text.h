@@ -27,8 +27,8 @@ typedef struct REBOL_PARA {
 		REBINT indent_y;
 		REBINT tabs;
 		REBINT wrap;
-		REBINT scroll_x;
-		REBINT scroll_y;
+		float scroll_x;
+		float scroll_y;
 		REBINT align;
 		REBINT valign;
 } REBPRA;

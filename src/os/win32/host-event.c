@@ -40,7 +40,7 @@
 //#include <winuser.h>
 
 #ifndef GET_WHEEL_DELTA_WPARAM
-#define GET_WHEEL_DELTA_WPARAM(wParam) ((signed int)(wParam & 0xffff0000) / WHEEL_DELTA)
+#define GET_WHEEL_DELTA_WPARAM(wparam) ((short)HIWORD (wparam))
 #endif
 
 #include "reb-host.h"
@@ -272,9 +272,9 @@ static Check_Modifiers(REBINT flags)
 		case WM_MOUSEWHEEL:
 			SystemParametersInfo(SPI_GETWHEELSCROLLLINES,0, &mw_num_lines, 0);
 			if (LOWORD(wParam) == MK_CONTROL || mw_num_lines > WHEEL_DELTA) {
-				Add_Event_XY(gob, EVT_SCROLL_PAGE, GET_WHEEL_DELTA_WPARAM(wParam), flags);
+				Add_Event_XY(gob, EVT_SCROLL_PAGE, (GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA) << 16, flags);
 			} else {
-				Add_Event_XY(gob, EVT_SCROLL_LINE, GET_WHEEL_DELTA_WPARAM(wParam) * mw_num_lines, flags);
+				Add_Event_XY(gob, EVT_SCROLL_LINE, ((GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA) << 16) * mw_num_lines, flags);
 			}
 			break;
 
@@ -351,7 +351,11 @@ static Check_Modifiers(REBINT flags)
 
 		case WM_CHAR:
 			flags = Check_Modifiers(flags);
+#ifdef OS_WIDE_CHAR
+			i = wParam;
+#else
 			i = wParam & 0xff;
+#endif
 			//if (i == 127) i = 8; // Windows weirdness of converting ctrl-backspace to delete
 			Add_Event_Key(gob, EVT_KEY, i, flags);
 			break;

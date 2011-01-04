@@ -1,7 +1,7 @@
 REBOL [
 	title: "REBOL Graphics proprocessors for DRAW, SHAPE and TEXT dialects"
 	author: "Richard 'Cyphre' Smolak"
-	version: 0.0.9
+	version: 0.0.12
 ]
 
 context [
@@ -14,7 +14,7 @@ context [
 	any-arg?: false ;turns 'any number of arg' mode on/off
 
 	;----------------------------------------
-	;caommand and argument syntax definitions for dialects
+	;command and argument syntax definitions for dialects
 	;----------------------------------------
 	
 	text-args: make object! [
@@ -66,7 +66,7 @@ context [
 		arrow: [tuple! | pair!]
 		box: [pair! | pair! | number!]
 		curve: [pair! (any-arg?: true)]
-		circle: [pair! | pair!]
+		circle: [pair! | number! | number!]
 		clip: [pair! | pair! | logic!]
 ;		effect: [pair! | pair! | block!]
 		ellipse: [pair! | pair!]
@@ -128,7 +128,7 @@ context [
 		skew: [pair!]
 		spline: [integer! | 'closed | pair! (any-arg?: true)]
 		text: ['aliased | 'antialiased | 'vectorial | pair! | pair! | block!]
-		transform: [number! | pair! | pair! | pair!]
+		transform: [number! | number! | number! | pair! | pair!]
 		translate: [pair!]
 		triangle: [pair! | pair! | pair! | tuple! | tuple! | tuple! | number!]
 	]
@@ -534,7 +534,7 @@ context [
 							[
 								'circle 
 								any [args/pair!/1 50x50] 
-								any [args/pair!/2 50x50]
+								as-pair a: any [args/integer!/1 args/decimal!/1 50] any [args/integer!/2 args/decimal!/2 a]
 							]
 						]
 						clip [
@@ -619,7 +619,7 @@ context [
 							['polygon args/pair!]
 						]
 						push [
-							['push to-draw args/block!]
+							['push to-draw args/block! copy []]
 						]
 						reset-matrix [
 							['reset-matrix]
@@ -653,8 +653,8 @@ context [
 								'transform
 								any [args/integer!/1 args/decimal!/1 0]
 								any [args/pair!/1 0x0]
-								any [args/pair!/2 1x1]
-								any [args/pair!/3 0x0]
+								any [as-pair a: any [args/integer!/2 args/decimal!/2 1] any [args/integer!/3 args/decimal!/3 a]]
+								any [args/pair!/2 0x0]
 							]
 						]
 						translate [

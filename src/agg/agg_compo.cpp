@@ -2,11 +2,12 @@
 //include "agg_effects.h"
 #include "agg_truetype_text.h"
 
-//extern "C" void Reb_Print(char *fmt, ...);//output just for testing
+//extern "C" void RL_Print(char *fmt, ...);//output just for testing
 extern "C" void Blit_Rect(REBGOB *gob, REBPAR d, REBPAR dsize, REBYTE *src, REBPAR s, REBPAR ssize);
 extern "C" void* Rich_Text;
 //extern "C" void* Effects;
 extern "C" void *RL_Series(REBSER *ser, REBINT what);
+extern "C" REBINT As_OS_Str(REBSER *series, REBCHR **string);
 
 namespace agg
 {
@@ -81,76 +82,6 @@ namespace agg
 		return FALSE;
 	}
 
-#ifdef not_used
-/***********************************************************************
-**
-*/	REBGOB* compositor::cp_upper_to_lower_coord(REBGOB* gob, REBPAR* offset)
-/*
-**	Map upper coordinates to lower. Returns pointer to lower face and
-**
-**  recalculates offset value.
-**
-***********************************************************************/
-	{
-		static int x = 0;
-		static int y = 0;
-
-		if (GOB_PANE(gob)) {
-			REBINT n;
-			REBINT len = GOB_TAIL(gob);
-			REBGOB **gp = GOB_HEAD(gob) + len - 1;
-
-			for (n = 0; n < len; n++, gp--) {
-				int ox = GOB_X(*gp);
-				int oy = GOB_Y(*gp);
-
-				if (
-					(ox + x <= offset->x) &&
-					(oy + y <= offset->y) &&
-					(ox + x + GOB_W(*gp) >= offset->x) &&
-					(oy + y + GOB_H(*gp) >= offset->y)
-				){
-					x += ox;
-					y += oy;
-
-					REBGOB* result = cp_upper_to_lower_coord(*gp, offset);
-
-					if (!result) {
-						offset->x -= x;
-						offset->y -= y;
-						result = *gp;
-					}
-					x = 0;
-					y = 0;
-					return result;
-				}
-			}
-
-		}
-		return 0;
-	}
-
-/***********************************************************************
-**
-*/	REBGOB* compositor::cp_lower_to_upper_coord(REBGOB* gob, REBPAR* offset)
-/*
-**	Map lower coordinates to upper. Returns pointer to uppermost face and
-**
-**  recalculates offset value.
-**
-***********************************************************************/
-	{
-		while (GOB_PARENT(gob) && GOB_PARENT(gob) != m_rootGob){
-			offset->x += GOB_X(gob);
-			offset->y += GOB_Y(gob);
-
-			gob = GOB_PARENT(gob);
-		}
-		return gob;
-	}
-#endif
-
-
 /***********************************************************************
 **
 */	REBINT compositor::cp_compose_gob(REBGOB* winGob, REBGOB* gob)
@@ -168,15 +99,15 @@ namespace agg
 
 		REBINT result;
 
-		REBINT ox = GOB_X(gob);
-		REBINT oy = GOB_Y(gob);
-		REBINT sx = GOB_W(gob);
-		REBINT sy = GOB_H(gob);
+		REBINT ox = GOB_X_INT(gob);
+		REBINT oy = GOB_Y_INT(gob);
+		REBINT sx = GOB_W_INT(gob);
+		REBINT sy = GOB_H_INT(gob);
 
-		REBINT oox = GOB_XO(gob);
-		REBINT ooy = GOB_YO(gob);
-		REBINT osx = GOB_WO(gob);
-		REBINT osy = GOB_HO(gob);
+		REBINT oox = GOB_XO_INT(gob);
+		REBINT ooy = GOB_YO_INT(gob);
+		REBINT osx = GOB_WO_INT(gob);
+		REBINT osy = GOB_HO_INT(gob);
 //m_gobs = 0;
 		m_gob = gob;
 		m_parent_gob = GOB_PARENT(gob);
@@ -187,8 +118,8 @@ namespace agg
 
 			REBGOB* parent = m_parent_gob;
 			while (GOB_PARENT(parent) && GOB_PARENT(parent) != m_rootGob){
-				REBINT pox = GOB_X(parent);
-				REBINT poy = GOB_Y(parent);
+				REBINT pox = GOB_X_INT(parent);
+				REBINT poy = GOB_Y_INT(parent);
 
 				ox += pox;
 				oy += poy;
@@ -457,10 +388,10 @@ namespace agg
 			CLR_GOB_STATE(gob, GOBS_NEW);
 		}
 
-		REBINT ox = GOB_X(gob);
-		REBINT oy = GOB_Y(gob);
-		REBINT sx = GOB_W(gob);
-		REBINT sy = GOB_H(gob);
+		REBINT ox = GOB_X_INT(gob);
+		REBINT oy = GOB_Y_INT(gob);
+		REBINT sx = GOB_W_INT(gob);
+		REBINT sy = GOB_H_INT(gob);
 //		Reb_Print("%dx%d %dx%d %d pane: %d type: %d %dx%d %dx%d", ox, oy, sx, sy, GOB_PANE(gob), (GOB_PANE(gob)) ? GOB_TAIL(gob) : 0, GOB_TYPE(gob), m_clip_box.x1, m_clip_box.y1, m_clip_box.x2, m_clip_box.y2);
 		REBINT tx = sx;
 		REBINT ty = sy;
@@ -472,12 +403,12 @@ namespace agg
 			REBGOB* parent = GOB_PARENT(gob);
 			REBINT pox = 0;
 			REBINT poy = 0;
-			REBINT pw = GOB_W(parent);
-			REBINT ph = GOB_H(parent);
+			REBINT pw = GOB_W_INT(parent);
+			REBINT ph = GOB_H_INT(parent);
 
 			while (GOB_PARENT(parent) && GOB_PARENT(parent) != m_rootGob){
-				pox += GOB_X(parent);
-				poy += GOB_Y(parent);
+				pox += GOB_X_INT(parent);
+				poy += GOB_Y_INT(parent);
 				parent = GOB_PARENT(parent);
 			}
 
@@ -591,16 +522,15 @@ namespace agg
 							}
 						}
 						break;
-#ifdef temp_removed
 					case GOBT_IMAGE:
 						{
-//							Reb_Print("IMAGE siz: %dx%d", GOB_CONTENT(gob)->size & 65535, GOB_CONTENT(gob)->size >> 16);
-//							Reb_Print("CB: %d %d %d %d", ox,oy,sx,sy);
-							int gobw = GOB_CONTENT(gob)->size & 65535;
-							int gobh = GOB_CONTENT(gob)->size >> 16;
+						    //FIXME: temporary hack for getting image w,h
+                            u16* d = (u16*)GOB_CONTENT(gob);
+							int w = d[8];
+							int h = d[9];
 							//render image
 							ren_buf m_rbuf_img;
-							m_rbuf_img.attach(GOB_BITMAP(gob),gobw,gobh,gobw * 4);
+							m_rbuf_img.attach(GOB_BITMAP(gob),w,h,w * 4);
 							agg_graphics::pixfmt pixf_img(m_rbuf_img);
 
 							if (GOB_ALPHA(gob) == 0){
@@ -612,7 +542,6 @@ namespace agg
 								m_rb_win.blend_from(pixf_img,0,0,0,255 - GOB_ALPHA(gob));
 							}
 						}
-#endif
 						break;
 					case GOBT_DRAW:
 						{
@@ -672,13 +601,17 @@ namespace agg
 								(GET_GOB_FLAG(gob, GOBF_WINDOW))
 							)
 						){
-//							Reb_Print("GOB string: %s" ,GOB_STRING(gob));
+						    REBCHR* str;
+						    REBINT res = As_OS_Str(GOB_CONTENT(gob), (REBCHR**)&str);
+
+//							RL_Print("GOB string: %d %s\n" ,res, str);
+
 							rich_text* rt = (rich_text*)Rich_Text;
 
 							rt->rt_reset();
 							rt->rt_attach_buffer(&m_rbuf_win, tx, ty, ox, oy);
 
-							rt->rt_set_text((REBCHR*)GOB_STRING(gob), TRUE);
+							rt->rt_set_text(str, TRUE);
 							rt->rt_push(1);
 
 							rt->rt_draw_text(DRAW_TEXT);

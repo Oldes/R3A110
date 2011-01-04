@@ -1,6 +1,6 @@
-REBOL [Title: "Basic TEXT test"]
+﻿REBOL [Title: "Basic TEXT test"]
 
-do %gfx-pre.r
+do %gfx-pre.r3
 
 win-size: 420x640
 ;;; WINDOW

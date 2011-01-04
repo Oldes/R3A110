@@ -1,1 +1,1 @@
-#define TO_LINUX
+#define TO_WIN32

@@ -204,6 +204,7 @@ context [
 	text-command: [
 		string!
 		| tuple!
+		| char!
 		| 'anti-alias
 		| 'b
 		| 'bold
@@ -346,6 +347,9 @@ context [
 						tuple! [
 							['color cmd]
 						]
+						char! [
+							['text to-string cmd]
+						]
 					][
 						append dst reduce switch/default cmd [
 							anti-alias [
@@ -373,7 +377,7 @@ context [
 								['left]
 							]
 							nl newline [
-								['newline]
+								['text to string! newline]
 							]
 							para [
 								['para args/object!/1]
@@ -397,8 +401,13 @@ context [
 						[]
 					]
 				)
+				| end
+				| a: (
+					do make error! reform ["TO-TEXT - unknown text command:" mold first a]
+				)
 			]
 		]
+		unless find dst 'text [append dst reduce ['text copy ""]] ;<- to make sure there is at least one string
 		bind/only dst ext-text
 	]
 

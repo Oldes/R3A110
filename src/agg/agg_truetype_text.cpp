@@ -37,7 +37,7 @@ namespace agg
 		m_para = new para();
 
 		rt_push();
-//		Reb_Print("RICH TEXT created!\n");
+//		RL_Print("RICH TEXT created!\n");
     }
 
 	//destructor(can be enhanced)
@@ -46,7 +46,7 @@ namespace agg
 		rt_reset();
 		delete m_font;
 		delete m_para;
-//        Reb_Print("RICH TEXT destroyed!\n");
+//        RL_Print("RICH TEXT destroyed!\n");
 	}
 
 	text_attributes& rich_text::rt_curr_attributes()
@@ -75,7 +75,7 @@ namespace agg
 
 	void rich_text::rt_reset()
 	{
-//	    Reb_Print("RICH TEXT reset!\n");
+//	    RL_Print("RICH TEXT reset!\n");
 		rt_text_mode(0);
 
 		m_color_changed = 0;
@@ -492,7 +492,7 @@ namespace agg
 	sets the text rendering mode (0-aliased,1-antialiased,2-vectorial)
 	--------------------------------------------------------------------*/
 	int rich_text::rt_text_mode(int mode){
-//	    Reb_Print("rt_text_mode: %d\n", mode);
+//	    RL_Print("rt_text_mode: %d\n", mode);
         switch(mode)
         {
 			case 0:
@@ -637,7 +637,7 @@ namespace agg
 
 		//process attribute stack
 		for(i = 0; i < attrSize; i++){
-//Reb_Print("processing attr: %d\n", i);
+//RL_Print("processing attr: %d\n", i);
 			text_attributes& attr = m_text_attributes[i];
 
 			m_feng.height(attr.size);
@@ -647,12 +647,11 @@ namespace agg
 			} else {
 				m_feng.weight(FW_DONTCARE);
 			}
-//Reb_Print("create FONT beg\n");
+//RL_Print("create FONT beg\n");
 			if(m_feng.create_font(attr.name, m_gren))
 			{
-//			    Reb_Print("create FONT OK\n");
+//			    RL_Print("create FONT OK\n");
 //				m_fman.precache(' ', 127);
-
 				if (i == 0){
 					//compute start of x coord
 					ABC* widths = new ABC [256];
@@ -686,7 +685,6 @@ m_text_pos_x = x0+lw;
 				GetTextExtentPoint32( m_dc, L"\x004E", 1, &area ); //"N"
 				attr.char_height = area.cy;
 
-
 				if (attr.index == 0) {
 					//skip attributes holding other than string info
 					continue;
@@ -715,7 +713,7 @@ m_text_pos_x = x0+lw;
 				switch (mode){
 					case DRAW_TEXT:
 						{
-//						    Reb_Print("DRAW TEXT!\n");
+//						    RL_Print("DRAW TEXT!\n");
 						ren_buf tmp_rb;
 						pixfmt_type tmp_pf(tmp_rb);
 
@@ -725,18 +723,18 @@ m_text_pos_x = x0+lw;
 						} else {
 							shadow = false;
 						}
-//Reb_Print("CLIP BOX!\n");
+//RL_Print("CLIP BOX!\n");
 						m_ren_base.clip_box(m_clip_x1, m_clip_y1, m_clip_x2, m_clip_y2);
 
 						//draw text mode
 						while(*p){
-//Reb_Print("GET GLYPH!\n");
+//RL_Print("GET GLYPH!\n");
 							//get glyph
 							const glyph_cache* glyph = m_fman.glyph(*p);
-//Reb_Print("GET GLYPH OK!\n");
+//RL_Print("GET GLYPH OK!\n");
 							if(glyph)
 							{
-//Reb_Print("DRAW GLYPH!\n");
+//RL_Print("DRAW GLYPH!\n");
 								double g_adv_x = glyph->advance_x;
 
 								bool tabbing = false;
@@ -762,7 +760,7 @@ m_text_pos_x = x0+lw;
 										wrap = 0;
 //										delim = strcspn (p+1," \n\t");
 										delim = wcscspn (p+1,L"\x0020\x000A\x0009"); //" \n\t"
-//										Reb_Print("delim: %d %d %d %d %d", strlen(p+1), slen, p, attr.text, slen + (attr.text - p) - 1 );
+//										RL_Print("delim: %d %d %d %d %d", strlen(p+1), slen, p, attr.text, slen + (attr.text - p) - 1 );
 										if (delim > slen + (attr.text - p) - 1){ //optimized! this means: (delim > (int)strlen(p+1))
 											area.cx =0;
 										} else {
@@ -1164,6 +1162,7 @@ m_text_pos_x = x0+lw;
 						break;
 					case OFFSET_TO_CARET:
 						//check if the offset is 'before text'
+						//RL_Print("OFFSET_TO_CARET: %dx%d\n", m_tmp_val.pair.x, m_tmp_val.pair.y );
 						if (
 							(m_tmp_val.pair.y < oy+attr.space_y) ||
 							((m_tmp_val.pair.x <= ox) && (m_tmp_val.pair.y <= (m_text_pos_y+m_text_attributes[mlha].desc)))
@@ -1798,6 +1797,7 @@ m_text_pos_x = x0+lw;
 				return -1; //unable to create font
 			}
 		}
+
 		switch (mode){
 			case DRAW_TEXT:
 					//render caret
@@ -1822,6 +1822,9 @@ m_text_pos_x = x0+lw;
 					caret_info.ch_desc=last_text_attr->desc;
 				return 0;
 			case OFFSET_TO_CARET:
+                    //return if there is no string
+                    if(last_text_attr->text==0) return 0;
+
 					//return tail of last string
 					m_tmp_val.pair.x=last_text_attr->index;
 //					m_tmp_val.pair.y=1+strlen(last_text_attr->text);

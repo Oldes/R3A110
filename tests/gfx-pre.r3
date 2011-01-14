@@ -4,7 +4,7 @@ REBOL [
 	version: 0.0.12
 ]
 
-context [
+gfx-pre: context [
 
 	ext-shape: import 'shape
 	ext-draw: import 'draw

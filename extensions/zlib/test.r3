@@ -4,10 +4,12 @@ REBOL [
 
 import %zlib-rxt.dll
 
-bin-test #{78DAF348CDC9C90700058C01F5}
-bin-test next #{78DAF348CDC9C90700058C01F5}
-bin-test to-binary "hello"
+;bin-test #{78DAF348CDC9C90700058C01F5}
+;bin-test next #{78DAF348CDC9C90700058C01F5}
+;bin-test to-binary "hello"
 ;ask ""
+
+probe zlib-compress to-binary "hello" 9
 
 probe data: #{78DAF348CDC9C90700058C01F5}
 

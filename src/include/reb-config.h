@@ -112,12 +112,15 @@ These are now obsolete (as of A107) and should be removed:
 //#pragma warning(disable : 4057)
 //#pragma warning(disable : 4701)
 
+#define AGG_WIN32_FONTS //use WIN32 api for font handling
+
 #else
 
 //* Non Windows ********************************************************
 
 #define MIN_OS					// not all devices are working
 #define NO_GRAPHICS				// no graphics yet
+#define AGG_FREETYPE            //use freetype2 library for fonts by default
 #define FINITE finite
 #define INLINE
 #define API_EXPORT __attribute__((visibility("default")))

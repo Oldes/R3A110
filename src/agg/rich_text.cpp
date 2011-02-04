@@ -9,7 +9,12 @@ namespace agg
 {
 	extern "C" void* Create_RichText()
 	{
+#ifdef AGG_WIN32_FONTS
 		return (void*)new rich_text(GetDC( NULL ));
+#endif
+#ifdef AGG_FREETYPE
+        return (void*)new rich_text();
+#endif
 	}
 
 	extern "C" void Destroy_RichText(void* rt)

@@ -108,6 +108,8 @@ namespace agg
         const rect&     bounds()      const { return m_bounds;      }
         double          advance_x()   const { return m_advance_x;   }
         double          advance_y()   const { return m_advance_y;   }
+        double          glyph_width()   const { return 0;   }
+        double          glyph_height()   const { return 0;   }
         void            write_glyph_to(int8u* data) const;
         bool            add_kerning(unsigned first, unsigned second,
                                     double* x, double* y);

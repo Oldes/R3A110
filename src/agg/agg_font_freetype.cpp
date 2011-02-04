@@ -539,6 +539,8 @@ namespace agg
         m_bounds(1,1,0,0),
         m_advance_x(0.0),
         m_advance_y(0.0),
+        m_glyph_height(0.0),
+        m_glyph_width(0.0),
 
         m_path16(),
         m_path32(),
@@ -600,12 +602,17 @@ namespace agg
 
 
     //------------------------------------------------------------------------
-    bool font_engine_freetype_base::load_font(const char* font_name, 
+    bool font_engine_freetype_base::load_font(const wchar_t* font_name_w,
                                               unsigned face_index,
                                               glyph_rendering ren_type,
                                               const char* font_mem, 
                                               const long font_mem_size)
     {
+        //dirty conversion wchar_t* to char* - needs improvements
+        int len = wcslen(font_name_w);
+        char *font_name = new char[len + 1];
+        font_name[len] = 0;
+        wcstombs( font_name, font_name_w, len );
         bool ret = false;
 
         if(m_library_initialized)
@@ -665,6 +672,7 @@ namespace agg
                 }
             }
 
+            delete[] font_name;
 
             if(m_last_error == 0)
             {
@@ -928,6 +936,8 @@ namespace agg
                     m_data_type = glyph_data_mono;
                     m_advance_x = int26p6_to_dbl(m_cur_face->glyph->advance.x);
                     m_advance_y = int26p6_to_dbl(m_cur_face->glyph->advance.y);
+                    m_glyph_height = int26p6_to_dbl(m_cur_face->glyph->metrics.height);
+                    m_glyph_width = int26p6_to_dbl(m_cur_face->glyph->metrics.width);
                     return true;
                 }
                 break;
@@ -953,6 +963,8 @@ namespace agg
                     m_data_type = glyph_data_gray8;
                     m_advance_x = int26p6_to_dbl(m_cur_face->glyph->advance.x);
                     m_advance_y = int26p6_to_dbl(m_cur_face->glyph->advance.y);
+                    m_glyph_height = int26p6_to_dbl(m_cur_face->glyph->metrics.height);
+                    m_glyph_width = int26p6_to_dbl(m_cur_face->glyph->metrics.width);
                     return true;
                 }
                 break;
@@ -978,6 +990,8 @@ namespace agg
                             m_bounds.y2 = int(ceil(bnd.y2));
                             m_advance_x = int26p6_to_dbl(m_cur_face->glyph->advance.x);
                             m_advance_y = int26p6_to_dbl(m_cur_face->glyph->advance.y);
+                            m_glyph_height = int26p6_to_dbl(m_cur_face->glyph->metrics.height);
+                            m_glyph_width = int26p6_to_dbl(m_cur_face->glyph->metrics.width);
                             m_affine.transform(&m_advance_x, &m_advance_y);
                             return true;
                         }
@@ -999,6 +1013,8 @@ namespace agg
                             m_bounds.y2 = int(ceil(bnd.y2));
                             m_advance_x = int26p6_to_dbl(m_cur_face->glyph->advance.x);
                             m_advance_y = int26p6_to_dbl(m_cur_face->glyph->advance.y);
+                            m_glyph_height = int26p6_to_dbl(m_cur_face->glyph->metrics.height);
+                            m_glyph_width = int26p6_to_dbl(m_cur_face->glyph->metrics.width);
                             m_affine.transform(&m_advance_x, &m_advance_y);
                             return true;
                         }
@@ -1038,6 +1054,8 @@ namespace agg
                     m_data_type = glyph_data_mono;
                     m_advance_x = int26p6_to_dbl(m_cur_face->glyph->advance.x);
                     m_advance_y = int26p6_to_dbl(m_cur_face->glyph->advance.y);
+                    m_glyph_height = int26p6_to_dbl(m_cur_face->glyph->metrics.height);
+                    m_glyph_width = int26p6_to_dbl(m_cur_face->glyph->metrics.width);
                     m_affine.transform(&m_advance_x, &m_advance_y);
                     return true;
                 }
@@ -1076,6 +1094,8 @@ namespace agg
                     m_data_type = glyph_data_gray8;
                     m_advance_x = int26p6_to_dbl(m_cur_face->glyph->advance.x);
                     m_advance_y = int26p6_to_dbl(m_cur_face->glyph->advance.y);
+                    m_glyph_height = int26p6_to_dbl(m_cur_face->glyph->metrics.height);
+                    m_glyph_width = int26p6_to_dbl(m_cur_face->glyph->metrics.width);
                     m_affine.transform(&m_advance_x, &m_advance_y);
                     return true;
                 }

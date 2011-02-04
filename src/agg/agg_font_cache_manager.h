@@ -42,6 +42,8 @@ namespace agg
         rect            bounds;
         double          advance_x;
         double          advance_y;
+        double          glyph_height;
+        double          glyph_width;
     };
 
 
@@ -85,7 +87,9 @@ namespace agg
                                  glyph_data_type data_type,
                                  const rect&     bounds,
                                  double          advance_x,
-                                 double          advance_y)
+                                 double          advance_y,
+                                 double          glyph_height,
+                                 double          glyph_width)
         {
             unsigned msb = (glyph_code >> 8) & 0xFF;
             if(m_glyphs[msb] == 0)
@@ -110,6 +114,8 @@ namespace agg
             glyph->bounds      = bounds;
             glyph->advance_x   = advance_x;
             glyph->advance_y   = advance_y;
+            glyph->glyph_height   = glyph_height;
+            glyph->glyph_width   = glyph_width;
             return m_glyphs[msb][lsb] = glyph;
         }
 
@@ -198,7 +204,9 @@ namespace agg
                                  glyph_data_type data_type,
                                  const rect&     bounds,
                                  double          advance_x,
-                                 double          advance_y)
+                                 double          advance_y,
+                                 double          glyph_height,
+                                 double          glyph_width)
         {
             if(m_cur_font) 
             {
@@ -208,7 +216,9 @@ namespace agg
                                                data_type,
                                                bounds,
                                                advance_x,
-                                               advance_y);
+                                               advance_y,
+                                               glyph_height,
+                                               glyph_width);
             }
             return 0;
         }
@@ -290,7 +300,9 @@ namespace agg
                                                        m_engine.data_type(),
                                                        m_engine.bounds(),
                                                        m_engine.advance_x(),
-                                                       m_engine.advance_y());
+                                                       m_engine.advance_y(),
+                                                       m_engine.glyph_height(),
+                                                       m_engine.glyph_width());
                     m_engine.write_glyph_to(m_last_glyph->data);
                     return m_last_glyph;
                 }

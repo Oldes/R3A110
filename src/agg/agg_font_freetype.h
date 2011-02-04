@@ -55,7 +55,7 @@ namespace agg
         // Set font parameters
         //--------------------------------------------------------------------
         void resolution(unsigned dpi);
-        bool load_font(const char* font_name, unsigned face_index, glyph_rendering ren_type,
+        bool load_font(const wchar_t* font_name_w, unsigned face_index, glyph_rendering ren_type,
                        const char* font_mem = 0, const long font_mem_size = 0);
         bool attach(const char* file_name);
         bool char_map(FT_Encoding map);
@@ -99,6 +99,8 @@ namespace agg
         const rect&     bounds()      const { return m_bounds;      }
         double          advance_x()   const { return m_advance_x;   }
         double          advance_y()   const { return m_advance_y;   }
+        double          glyph_height()   const { return m_glyph_height;   }
+        double          glyph_width()   const { return m_glyph_width;   }
         void            write_glyph_to(int8u* data) const;
         bool            add_kerning(unsigned first, unsigned second,
                                     double* x, double* y);
@@ -138,6 +140,8 @@ namespace agg
         rect            m_bounds;
         double          m_advance_x;
         double          m_advance_y;
+        double          m_glyph_height;
+        double          m_glyph_width;
         trans_affine    m_affine;
 
         path_storage_integer<int16, 6>              m_path16;

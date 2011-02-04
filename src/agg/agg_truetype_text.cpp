@@ -12,12 +12,19 @@ namespace agg
 {
 
 	//constructor
+#ifdef AGG_WIN32_FONTS
 	rich_text::rich_text(HDC dc) :
 		m_dc(dc),
 		m_feng(dc),
+#endif
+#ifdef AGG_FREETYPE
+	rich_text::rich_text() :
+        m_feng(),
+#endif
 		m_fman(m_feng),
 		m_curves(m_fman.path_adaptor()),
-		m_caret(0)
+		m_caret(0),
+		m_hinting(true)
 //		m_contour(m_curves)
 	{
 //		m_contour.auto_detect_orientation(false);
@@ -25,7 +32,7 @@ namespace agg
 		debug = 0;
 
 		m_gren = glyph_ren_native_mono;
-        m_feng.hinting(true);
+        m_feng.hinting(m_hinting);
 		m_feng.width(0);
         m_feng.flip_y(true);
 
@@ -36,7 +43,7 @@ namespace agg
 		m_font = new font();
 		m_para = new para();
 
-		rt_push();
+//		rt_push();
 //		RL_Print("RICH TEXT created!\n");
     }
 
@@ -46,7 +53,7 @@ namespace agg
 		rt_reset();
 		delete m_font;
 		delete m_para;
-//        RL_Print("RICH TEXT destroyed!\n");
+//        Reb_Print("RICH TEXT destroyed!\n");
 	}
 
 	text_attributes& rich_text::rt_curr_attributes()
@@ -72,7 +79,18 @@ namespace agg
 			m_wrap_size_y = y2 - y1;
 
 	}
-
+#ifdef AGG_FREETYPE
+    void rich_text::GetTextExtentPointFT(const wchar_t *string, int c, SIZE *size)
+    {
+        size->cy = 0;
+        size->cx = 0;
+        for (int i = 0; i < c; i++ ){
+            const glyph_cache* glyph = m_fman.glyph(string[i]);
+            size->cx += (int)glyph->glyph_width;
+            size->cy = (int)max(glyph->glyph_height, size->cy);
+        }
+    }
+#endif
 	void rich_text::rt_reset()
 	{
 //	    RL_Print("RICH TEXT reset!\n");
@@ -143,7 +161,7 @@ namespace agg
 
 		m_text = 0;
 
-		rt_push();
+//		rt_push();
 	}
 
 	void rich_text::rt_attach_buffer(ren_buf* img_buf, int w, int h, int x, int y)
@@ -316,6 +334,7 @@ namespace agg
 		text_attributes& attr = m_text_attributes[idx];
 
 		//setup font engine
+#ifdef AGG_WIN32_FONTS
 		m_feng.height(attr.size);
 		m_feng.italic(attr.italic);
 		if (attr.bold){
@@ -325,7 +344,12 @@ namespace agg
 		}
 
 		if(m_feng.create_font(attr.name, m_gren)){
-
+#endif
+#ifdef AGG_FREETYPE
+        if (m_feng.load_font(attr.name, 0, m_gren)){
+            m_feng.height(attr.size);
+#endif
+#ifdef AGG_WIN32_FONTS
 			//get ascent & descent values of  given font(used in case the attribute is checked before rendering)
 			TEXTMETRIC tm;
 			GetTextMetrics( m_dc, &tm );
@@ -336,6 +360,14 @@ namespace agg
 			SIZE area;
 			GetTextExtentPoint32( m_dc, L"\x004E", 1, &area ); //'N'
 			return area.cy;
+#endif
+#ifdef AGG_FREETYPE
+			attr.desc = (int)-m_feng.descender() - 1;
+			attr.asc = (int)m_feng.ascender();
+
+            const glyph_cache* glyph = m_fman.glyph(*L"\x004E");
+            return ((glyph) ? (int)glyph->glyph_height : 0);
+#endif
 		}
 		return 0;
 	}
@@ -382,6 +414,7 @@ namespace agg
 			if (attr.index == 0) continue;
 
 			//setup font engine
+#ifdef AGG_WIN32_FONTS
 			m_feng.height(attr.size);
 			m_feng.italic(attr.italic);
 			if (attr.bold){
@@ -391,6 +424,11 @@ namespace agg
 
 			}
 			if(m_feng.create_font(attr.name, m_gren)){
+#endif
+#ifdef AGG_FREETYPE
+			if(m_feng.load_font(attr.name, 0, m_gren)){
+                m_feng.height(attr.size);
+#endif
 				const wchar_t* p = attr.text;
 				if (init){
 					init = false;
@@ -492,7 +530,7 @@ namespace agg
 	sets the text rendering mode (0-aliased,1-antialiased,2-vectorial)
 	--------------------------------------------------------------------*/
 	int rich_text::rt_text_mode(int mode){
-//	    RL_Print("rt_text_mode: %d\n", mode);
+//	    Reb_Print("rt_text_mode: %d\n", mode);
         switch(mode)
         {
 			case 0:
@@ -572,8 +610,9 @@ namespace agg
 		//max line height
 		int lh = rt_text_height(mlha);
 
+#ifdef AGG_WIN32_FONTS
 		TEXTMETRIC tm;
-
+#endif
 		//actual proccessed attribute
 		const text_attributes& attr = m_text_attributes[mlha];
 
@@ -611,10 +650,16 @@ namespace agg
 			}
 		}
 
+#ifdef AGG_WIN32_FONTS
 		m_feng.create_font(attr.name, m_gren);
 		GetTextMetrics( m_dc, &tm );
 		m_text_pos_y = tm.tmAscent + oy + attr.space_y;
-
+#endif
+#ifdef AGG_FREETYPE
+        m_feng.load_font(attr.name, 0, m_gren);
+        m_feng.height(attr.size);
+        m_text_pos_y = m_feng.ascender() + oy + attr.space_y;
+#endif
 		//find last text attribute
 		const text_attributes* last_text_attr = &attr;
 
@@ -637,9 +682,10 @@ namespace agg
 
 		//process attribute stack
 		for(i = 0; i < attrSize; i++){
-//RL_Print("processing attr: %d\n", i);
+//Reb_Print("processing attr: %d\n", i);
 			text_attributes& attr = m_text_attributes[i];
 
+#ifdef AGG_WIN32_FONTS
 			m_feng.height(attr.size);
 			m_feng.italic(attr.italic);
 			if (attr.bold){
@@ -647,13 +693,21 @@ namespace agg
 			} else {
 				m_feng.weight(FW_DONTCARE);
 			}
-//RL_Print("create FONT beg\n");
+//Reb_Print("create FONT beg\n");
 			if(m_feng.create_font(attr.name, m_gren))
 			{
-//			    RL_Print("create FONT OK\n");
+#endif
+#ifdef AGG_FREETYPE
+			if(m_feng.load_font(attr.name, 0, m_gren))
+			{
+                m_feng.height(attr.size);
+#endif
+//			    Reb_Print("create FONT OK\n");
 //				m_fman.precache(' ', 127);
+
 				if (i == 0){
 					//compute start of x coord
+#ifdef AGG_WIN32_FONTS
 					ABC* widths = new ABC [256];
 					if ( GetCharABCWidths( m_dc, 0, 255, widths) == 0 ) {
 						if ( GetCharWidth32( m_dc, 0, 255, (int *)widths ) == 0 ) {
@@ -667,6 +721,10 @@ namespace agg
 							x0 = widths[i].abcA;
 					}
 					delete [] widths;
+#endif
+#ifdef AGG_FREETYPE
+                    x0 = 0; //fixme
+#endif
 					m_right_hang -= (int)x0;
 					x0 =  ox - x0;
 					m_text_pos_x = x0+lw;
@@ -675,16 +733,27 @@ x0 = attr.para.origin_x + attr.para.indent_x + attr.para.scroll_x;
 m_text_pos_x = x0+lw;
 				}
 */
+
+#ifdef AGG_WIN32_FONTS
 				//get ascent & descent values of given font
 				GetTextMetrics( m_dc, &tm );
 				attr.desc = tm.tmDescent - 1;
 				attr.asc = tm.tmAscent;
 
-				//get char_width
+				//get char_height
 				SIZE area;
 				GetTextExtentPoint32( m_dc, L"\x004E", 1, &area ); //"N"
-				attr.char_height = area.cy;
+#endif
+#ifdef AGG_FREETYPE
+                SIZE area;
+				attr.desc = (int)-m_feng.descender() - 1;
+				attr.asc = (int)m_feng.ascender();
 
+                const glyph_cache* glyph = m_fman.glyph(*L"\x004E");
+                area.cx = (int)glyph->glyph_width;
+                area.cy = (int)glyph->glyph_height;
+#endif
+				attr.char_height = area.cy;
 				if (attr.index == 0) {
 					//skip attributes holding other than string info
 					continue;
@@ -703,7 +772,12 @@ m_text_pos_x = x0+lw;
 				if ((delim > slen)){
 					area.cx =0;
 				} else {
+#ifdef AGG_WIN32_FONTS
 					GetTextExtentPoint32( m_dc, p , delim, &area );
+#endif
+#ifdef AGG_FREETYPE
+                GetTextExtentPointFT( p , delim, &area );
+#endif
 					area.cx+= (attr.space_x * (delim - 1));
 					if (area.cx >= m_wrap_size_x-m_right_hang){
 						area.cx = 0;
@@ -713,7 +787,7 @@ m_text_pos_x = x0+lw;
 				switch (mode){
 					case DRAW_TEXT:
 						{
-//						    RL_Print("DRAW TEXT!\n");
+//						    Reb_Print("DRAW TEXT!\n");
 						ren_buf tmp_rb;
 						pixfmt_type tmp_pf(tmp_rb);
 
@@ -723,18 +797,18 @@ m_text_pos_x = x0+lw;
 						} else {
 							shadow = false;
 						}
-//RL_Print("CLIP BOX!\n");
+//Reb_Print("CLIP BOX!\n");
 						m_ren_base.clip_box(m_clip_x1, m_clip_y1, m_clip_x2, m_clip_y2);
 
 						//draw text mode
 						while(*p){
-//RL_Print("GET GLYPH!\n");
+//Reb_Print("GET GLYPH!\n");
 							//get glyph
 							const glyph_cache* glyph = m_fman.glyph(*p);
-//RL_Print("GET GLYPH OK!\n");
+//Reb_Print("GET GLYPH OK!\n");
 							if(glyph)
 							{
-//RL_Print("DRAW GLYPH!\n");
+//Reb_Print("DRAW GLYPH!\n");
 								double g_adv_x = glyph->advance_x;
 
 								bool tabbing = false;
@@ -760,11 +834,16 @@ m_text_pos_x = x0+lw;
 										wrap = 0;
 //										delim = strcspn (p+1," \n\t");
 										delim = wcscspn (p+1,L"\x0020\x000A\x0009"); //" \n\t"
-//										RL_Print("delim: %d %d %d %d %d", strlen(p+1), slen, p, attr.text, slen + (attr.text - p) - 1 );
+//										Reb_Print("delim: %d %d %d %d %d", strlen(p+1), slen, p, attr.text, slen + (attr.text - p) - 1 );
 										if (delim > slen + (attr.text - p) - 1){ //optimized! this means: (delim > (int)strlen(p+1))
 											area.cx =0;
 										} else {
+#ifdef AGG_WIN32_FONTS
 											GetTextExtentPoint32( m_dc, p , delim+1, &area );
+#endif
+#ifdef AGG_FREETYPE
+                                            GetTextExtentPointFT( p , delim+1, &area );
+#endif
 											area.cx+= (attr.space_x * delim);
 											if (area.cx >= m_wrap_size_x-m_right_hang){
 												area.cx = 0;
@@ -885,6 +964,7 @@ m_text_pos_x = x0+lw;
 									m_text_pos_x+=lw;
 
 									//setup font engine
+#ifdef AGG_WIN32_FONTS
 									m_feng.height(attr.size);
 									m_feng.italic(attr.italic);
 									if (attr.bold){
@@ -893,7 +973,11 @@ m_text_pos_x = x0+lw;
 										m_feng.weight(FW_DONTCARE);
 									}
 									m_feng.create_font(attr.name, m_gren);
-
+#endif
+#ifdef AGG_FREETYPE
+                                    m_feng.load_font(attr.name, 0, m_gren);
+                                    m_feng.height(attr.size);
+#endif
 									prev_attr = i;
 									wrap = 0;
 									continue;
@@ -1162,7 +1246,6 @@ m_text_pos_x = x0+lw;
 						break;
 					case OFFSET_TO_CARET:
 						//check if the offset is 'before text'
-						//RL_Print("OFFSET_TO_CARET: %dx%d\n", m_tmp_val.pair.x, m_tmp_val.pair.y );
 						if (
 							(m_tmp_val.pair.y < oy+attr.space_y) ||
 							((m_tmp_val.pair.x <= ox) && (m_tmp_val.pair.y <= (m_text_pos_y+m_text_attributes[mlha].desc)))
@@ -1212,7 +1295,12 @@ m_text_pos_x = x0+lw;
 										if (delim > slen + (attr.text - p) - 1){ //optimized! this means: (delim > (int)strlen(p+1))
 											area.cx =0;
 										} else {
+#ifdef AGG_WIN32_FONTS
 											GetTextExtentPoint32( m_dc, p , delim+1, &area );
+#endif
+#ifdef AGG_FREETYPE
+                                            GetTextExtentPointFT( p , delim+1, &area );
+#endif
 											area.cx+= (attr.space_x * delim);
 											if (area.cx >= m_wrap_size_x-m_right_hang){
 												area.cx = 0;
@@ -1328,6 +1416,7 @@ m_text_pos_x = x0+lw;
 									m_text_pos_x+=lw;
 
 									//setup font engine
+#ifdef AGG_WIN32_FONTS
 									m_feng.height(attr.size);
 									m_feng.italic(attr.italic);
 									if (attr.bold){
@@ -1336,6 +1425,11 @@ m_text_pos_x = x0+lw;
 										m_feng.weight(FW_DONTCARE);
 									}
 									m_feng.create_font(attr.name, m_gren);
+#endif
+#ifdef AGG_FREETYPE
+                                    m_feng.load_font(attr.name, 0, m_gren);
+                                    m_feng.height(attr.size);
+#endif
 									wrap = 0;
 									continue;
 								} else {
@@ -1436,7 +1530,12 @@ m_text_pos_x = x0+lw;
 										if (delim > slen + (attr.text - p) - 1){ //optimized! this means: (delim > (int)strlen(p+1))
 											area.cx =0;
 										} else {
+#ifdef AGG_WIN32_FONTS
 											GetTextExtentPoint32( m_dc, p , delim+1, &area );
+#endif
+#ifdef AGG_FREETYPE
+                                            GetTextExtentPointFT( p , delim+1, &area );
+#endif
 											area.cx+= (attr.space_x * delim);
 											if (area.cx >= m_wrap_size_x-m_right_hang){
 												area.cx = 0;
@@ -1553,6 +1652,7 @@ m_text_pos_x = x0+lw;
 									m_text_pos_x+=lw;
 
 									//setup font engine
+#ifdef AGG_WIN32_FONTS
 									m_feng.height(attr.size);
 									m_feng.italic(attr.italic);
 									if (attr.bold){
@@ -1561,6 +1661,12 @@ m_text_pos_x = x0+lw;
 										m_feng.weight(FW_DONTCARE);
 									}
 									m_feng.create_font(attr.name, m_gren);
+#endif
+#ifdef AGG_FREETYPE
+                                    m_feng.load_font(attr.name, 0, m_gren);
+                                    m_feng.height(attr.size);
+#endif
+
 									wrap = 0;
 									continue;
 								} else {
@@ -1638,7 +1744,12 @@ m_text_pos_x = x0+lw;
 										if (delim > slen + (attr.text - p) - 1){ //optimized! this means: (delim > (int)strlen(p+1))
 											area.cx =0;
 										} else {
+#ifdef AGG_WIN32_FONTS
 											GetTextExtentPoint32( m_dc, p , delim+1, &area );
+#endif
+#ifdef AGG_FREETYPE
+                                            GetTextExtentPointFT( p , delim+1, &area );
+#endif
 											area.cx+= (attr.space_x * delim);
 											if (area.cx >= m_wrap_size_x-m_right_hang){
 												area.cx = 0;
@@ -1749,6 +1860,7 @@ m_text_pos_x = x0+lw;
 									m_text_pos_x+=lw;
 
 									//setup font engine
+#ifdef AGG_WIN32_FONTS
 									m_feng.height(attr.size);
 									m_feng.italic(attr.italic);
 									if (attr.bold){
@@ -1757,6 +1869,12 @@ m_text_pos_x = x0+lw;
 										m_feng.weight(FW_DONTCARE);
 									}
 									m_feng.create_font(attr.name, m_gren);
+#endif
+#ifdef AGG_FREETYPE
+                                    m_feng.load_font(attr.name, 0, m_gren);
+                                    m_feng.height(attr.size);
+#endif
+
 									wrap = 0;
 									continue;
 								} else {
@@ -1797,7 +1915,6 @@ m_text_pos_x = x0+lw;
 				return -1; //unable to create font
 			}
 		}
-
 		switch (mode){
 			case DRAW_TEXT:
 					//render caret
@@ -1822,7 +1939,7 @@ m_text_pos_x = x0+lw;
 					caret_info.ch_desc=last_text_attr->desc;
 				return 0;
 			case OFFSET_TO_CARET:
-                    //return if there is no string
+                   //return if there is no string
                     if(last_text_attr->text==0) return 0;
 
 					//return tail of last string

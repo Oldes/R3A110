@@ -25,7 +25,7 @@
 #endif
 #include "reb-config.h"
 #include "reb-c.h"
-extern "C" void Reb_Print(char *fmt, ...); // a-lib.c
+//extern "C" void RL_Print(char *fmt, ...);//output just for testing
 namespace agg
 {
     //------------------------------------------------------------------------------

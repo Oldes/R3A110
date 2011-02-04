@@ -7,9 +7,23 @@
 #include "agg_renderer_primitives.h"
 #include "agg_rasterizer_scanline_aa.h"
 #include "agg_conv_curve.h"
-#include "agg_conv_contour.h"
+//#include "agg_conv_contour.h"
 #include "agg_pixfmt_rgba_rebol.h"
+
+#ifdef AGG_WIN32_FONTS
 #include "agg_font_win32_tt.h"
+#endif
+#ifdef AGG_FREETYPE
+    #ifndef max
+    #define max(a,b) ((a)>(b)?(a):(b))
+    #endif
+    #ifndef min
+    #define min(a,b) ((a)<(b)?(a):(b))
+    #endif
+
+	#include "agg_font_freetype.h"
+#endif
+
 #include "host-ext-text.h"
 
 namespace agg
@@ -115,8 +129,12 @@ namespace agg
 	union tmp_val {
 		REBPAR  pair;
 	};
-
-
+#ifdef AGG_FREETYPE
+    typedef struct tagSIZE {
+        long cx;
+        long cy;
+    } SIZE;
+#endif
 	struct text_attributes {
 		unsigned index;
 		wchar_t *name;
@@ -189,7 +207,12 @@ namespace agg
 			typedef renderer_base<pixfmt_type> base_ren_type;
 			typedef renderer_scanline_aa_solid<base_ren_type> renderer_solid;
 			typedef renderer_scanline_bin_solid<base_ren_type> renderer_bin;
+#ifdef AGG_WIN32_FONTS
 			typedef font_engine_win32_tt_int32 font_engine_type;
+#endif
+#ifdef AGG_FREETYPE
+            typedef font_engine_freetype_int32 font_engine_type;
+#endif
 			typedef font_cache_manager<font_engine_type> font_manager_type;
 
 			// Pipeline to process the vectors glyph paths (curves + contour)
@@ -200,8 +223,13 @@ namespace agg
 			typedef pod_deque<agg::path_attributes> path_attr_storage;
 
 			~rich_text();
-			rich_text(HDC dc);
 
+#ifdef AGG_WIN32_FONTS
+			rich_text(HDC dc);
+#endif
+#ifdef AGG_FREETYPE
+			rich_text();
+#endif
 			void rt_pair(REBPAR p);
 
 			void rt_attach_buffer(ren_buf* buf, int w, int h, int x=0, int y=0);
@@ -242,11 +270,16 @@ namespace agg
 			int debug;
 
 		private:
+#ifdef AGG_FREETYPE
+            void GetTextExtentPointFT(const wchar_t* string, int c, SIZE *size);
+#endif
 			ren_buf*					m_rbuf;
 			font_engine_type			m_feng;
 			font_manager_type			m_fman;
 			glyph_rendering				m_gren;
+#ifdef AGG_WIN32_FONTS
 			HDC							m_dc;
+#endif
 			conv_curve_type				m_curves;
 //			conv_contour_type			m_contour;
 			unsigned char*				m_img_buf;
@@ -279,6 +312,7 @@ namespace agg
 			hinfo*						m_hinfo;
 			REBPAR						m_hstart;
 			REBPAR						m_hend;
+            bool                        m_hinting;
 
 			unsigned					m_color_changed;
 

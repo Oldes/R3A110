@@ -15,6 +15,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-DTO_WIN32" />
 				</Compiler>
 			</Target>
 			<Target title="ReleaseVIEW">
@@ -25,6 +26,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O1" />
+					<Add option="-DTO_WIN32" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -39,6 +41,7 @@
 				<Compiler>
 					<Add option="-O1" />
 					<Add option="-DREB_CORE" />
+					<Add option="-DTO_WIN32" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -53,6 +56,7 @@
 				<Compiler>
 					<Add option="-g" />
 					<Add option="-DREB_CORE" />
+					<Add option="-DTO_WIN32" />
 				</Compiler>
 			</Target>
 		</Build>
@@ -236,26 +240,51 @@
 		<Unit filename="..\src\include\reb-to.h" />
 		<Unit filename="..\src\include\rebol-lib.h" />
 		<Unit filename="..\src\include\sys-net.h" />
-		<Unit filename="..\src\os\dev-dns.c" />
-		<Unit filename="..\src\os\dev-net.c" />
-		<Unit filename="..\src\os\host-args.c" />
-		<Unit filename="..\src\os\host-device.c" />
-		<Unit filename="..\src\os\host-main.c" />
-		<Unit filename="..\src\os\host-stdio.c" />
-		<Unit filename="..\src\os\win32\dev-clipboard.c" />
-		<Unit filename="..\src\os\win32\dev-event.c" />
-		<Unit filename="..\src\os\win32\dev-file.c" />
-		<Unit filename="..\src\os\win32\dev-stdio.c" />
+		<Unit filename="..\src\os\dev-dns.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\dev-net.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\host-args.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\host-device.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\host-main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\host-stdio.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\win32\dev-clipboard.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\win32\dev-event.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\win32\dev-file.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="..\src\os\win32\dev-stdio.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="..\src\os\win32\host-event.c">
+			<Option compilerVar="CC" />
 			<Option target="DebugVIEW" />
 			<Option target="ReleaseVIEW" />
 		</Unit>
 		<Unit filename="..\src\os\win32\host-graphics.c">
+			<Option compilerVar="CC" />
 			<Option target="DebugVIEW" />
 			<Option target="ReleaseVIEW" />
 		</Unit>
-		<Unit filename="..\src\os\win32\host-lib.c" />
+		<Unit filename="..\src\os\win32\host-lib.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="..\src\os\win32\host-window.c">
+			<Option compilerVar="CC" />
 			<Option target="DebugVIEW" />
 			<Option target="ReleaseVIEW" />
 		</Unit>

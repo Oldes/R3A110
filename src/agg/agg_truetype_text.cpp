@@ -115,7 +115,7 @@ namespace agg
 
 		m_text_attributes.remove_all();
 
-		m_font->name = L"\x0041\x0072\x0069\x0061\x006C"; //"Arial"
+		m_font->name = defaultFontName;
 		m_font->name_gc = true;
 		m_font->bold = 0;
 		m_font->italic = 0;

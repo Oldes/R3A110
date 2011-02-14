@@ -26,6 +26,8 @@
 
 #include "host-ext-text.h"
 
+#define defaultFontName  (wchar_t*)L"\x0041\x0072\x0069\x0061\x006C" //"Arial"
+
 namespace agg
 {
 
@@ -77,7 +79,7 @@ namespace agg
 		}
 
 		font() :
-			name(L"\x0041\x0072\x0069\x0061\x006C"), //"Arial"
+			name(defaultFontName),
 			name_gc(TRUE),
 			bold(0),
 			italic(0),

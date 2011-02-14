@@ -69,7 +69,7 @@
 			<Add library="gdi32" />
 			<Add library="stdc++" />
 			<Add library="r3lib" />
-			<Add directory="..\lib" />
+			<Add directory="..\lib\3-1\" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="post-build-win.cmd $(TARGET_OUTPUT_DIR)" />

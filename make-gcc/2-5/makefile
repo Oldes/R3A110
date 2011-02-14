@@ -3,8 +3,9 @@
 
 C= gcc 
 #C= cc  (an alternative)
-S= ../src
-L= ../lib
+R= ../..
+S= $R/src
+L= $R/lib/2-5
 O= obj
 I= $S/include
 T= $S/tools
@@ -12,8 +13,8 @@ T= $S/tools
 # Set this to the name of the file copy program:
 CP=	cp
 
-CFLAGS= -c -O1 -D_FILE_OFFSET_BITS=64 -Wno-pointer-sign -I $S/include/
-LIBS= ./libr3.so
+CFLAGS= -c -O1 -D_FILE_OFFSET_BITS=64 -Wno-pointer-sign -I $I/ -DTO_OSX
+LIBS= -ldl -L. -Wl,-rpath=. -lr3
 
 INCS= \
 	$I/reb-config.h\
@@ -75,30 +76,28 @@ AGG= \
 	$O/graphics.o\
 	$O/rich_text.o
 
-all:
-	-mkdir obj
-	make r3core
+all: r3core
 
-clean:
-	-rm obj/*
+clean: $O
+	-rm -f $O/*
 
-core:
-	-mkdir obj
-	make r3core
+core: r3core
 
-r3:	 $(OBJS) $(GFX) $(AGG) libr3.so
+r3:	 $O $(OBJS) $(GFX) $(AGG) libr3.dylib
 	$C $(CFLAGS) -o $O/host-main.o $S/os/host-main.c
 	$C -o r3 $(OBJS) $(GFX) $(AGG) $(LIBS)
 	strip r3
 
-r3core:	$(OBJS) libr3.so
+r3core:	$O $(OBJS) libr3.dylib
 	$C $(CFLAGS) -DREB_CORE -o $O/host-main.o $S/os/host-main.c
 	$C -o r3core $(OBJS) $(LIBS)
 	strip r3core
 
-libr3.so: $L/libr3.so
-	$(CP) $L/libr3.so .
+libr3.dylib: $L/libr3.dylib
+	$(CP) $L/libr3.dylib .
 
+$O:
+	mkdir -p $O
 
 #--- Convert REBOL files to C files:
 

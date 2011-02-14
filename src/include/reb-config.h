@@ -14,7 +14,8 @@
 **
 ***********************************************************************/
 
-#include "reb-to.h"		// build target (#define TO_osname)
+//#include "reb-to.h"		// build target (#define TO_osname)
+//Instead of defines in reb-to.h file using compiler flag!
 
 /** Primary Configuration **********************************************
 
